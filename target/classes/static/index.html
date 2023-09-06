@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Transaction Data Table</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: #fff;
+            margin-top: 40px;
+            margin-bottom: 5%;
+        }
+
+        /* Style for the "Installments" header */
+        #installmentsHeader {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: #fff;
+            margin-top: 40px;
+            margin-bottom: 5%;
+            display: none; /* Initially hide the header */
+        }
+
+        table {
+            width: 70%;
+            margin: 20px auto;
+            background-color: #fff;
+            border-collapse: collapse;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #333;
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        /* Style for the pagination buttons */
+        .pagination {
+            text-align: right;
+            margin-top: 25px;
+            margin-right: 15%;
+        }
+
+        .pagination button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        /* Style for the Back button */
+        .back-button button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-left: 15.5%;
+            margin-bottom: 3%;
+            cursor: pointer;
+        }
+
+        /* Style for the page offset text */
+        .page-offset {
+            display: inline-block;
+            color: #333;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* Additional CSS styles for the new table */
+        #totalPaidAmountTable {
+            width: 70%;
+            margin: 20px auto;
+            background-color: #fff;
+            border-collapse: collapse;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* Initially hide the table */
+        }
+
+        /* Additional CSS styles for the new table */
+        #totalPaidAmountTable th,
+        #totalPaidAmountTable td {
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* Additional CSS styles for the new table */
+        #totalPaidAmountTable th {
+            background-color: #333;
+            color: #fff;
+        }
+    </style>
+
+</head>
+
+<body>
+<h1 id="transactionHeader">Transaction Data Table</h1>
+<!-- "Installments" header -->
+<h1 id="installmentsHeader">Installment History</h1>
+
+<table id="data-table">
+    <!-- Table for displaying user data -->
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Sender</th>
+        <th>Receiver</th>
+        <th>Total Amount</th>
+        <th>Total Paid Amount</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Add a hidden div to show the clicked total paid amount -->
+<div id="totalPaidAmountDetails" style="display: none;">
+    <p id="clickedAmount"></p>
+</div>
+
+<!-- New table for total paid amount details -->
+<table id="totalPaidAmountTable">
+    <!-- Table for displaying total paid amount details -->
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Sender</th>
+        <th>Receiver</th>
+        <th>Total Amount</th>
+        <th>Paid Amount</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Back button container -->
+<div id="backButtonContainer" style="display: none;" class="back-button">
+    <button id="backButton" class="backButton">&larr; Back</button>
+</div>
+
+<div id="pagination" class="pagination">
+    <!-- Pagination controls -->
+    <span id="pageNumber" class="page-offset">Page <span id="pageOffset">1</span></span>
+    <button id="prevPageButton">&larr; Prev Page</button>
+    <button id="nextPageButton">Next Page &rarr;</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        let offset = 0; // Initialize the offset to 0
+        const pageSize = 2; // Define the page size
+
+        // Function to load data with a given offset
+        function loadDataWithOffset(offset) {
+            $.ajax({
+                url: `/users/list/${offset}/${pageSize}/id`, // Use the updated offset
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    // Clear the table before populating with new data
+                    $('#data-table tbody').empty();
+
+                    // Iterate through the JSON data and populate the table
+                    data.forEach(function (item) {
+                        const invoiceId = item.id - 16;
+                        $('#data-table tbody').append(`
+                                <tr>
+                                    <td>${invoiceId}</td>
+                                    <td>${item.sender}</td>
+                                    <td>${item.receiver}</td>
+                                    <td>${item.totalAmount}</td>
+                                    <td><a href="#" class="total-paid-amount" data-id="${invoiceId}" data-sender="${item.sender}" data-receiver="${item.receiver}" data-amount="${item.totalAmount}">${item.totalPaidAmount}</a></td>
+                                </tr>
+                            `);
+                    });
+                },
+                error: function (error) {
+                    console.error('Error fetching JSON data:', error);
+                }
+            });
+        }
+
+        // Load initial data
+        loadDataWithOffset(offset);
+
+        // Update the page offset text
+        function updatePageOffsetText() {
+            $('#pageOffset').text(offset + 1);
+        }
+
+        // Handle button click to load the next page
+        $('#nextPageButton').click(function () {
+            if (offset < 3) {
+                offset += 1; // Increment the offset by 1 if it's within bounds
+                loadDataWithOffset(offset); // Load data with the updated offset
+                updatePageOffsetText(); // Update the page offset text
+            }
+        });
+
+        // Handle button click to load the previous page
+        $('#prevPageButton').click(function () {
+            if (offset > 0) {
+                offset -= 1; // Decrement the offset by 1 if it's greater than 0
+                loadDataWithOffset(offset); // Load data with the updated offset
+                updatePageOffsetText(); // Update the page offset text
+            }
+        });
+
+        // Handle click on "Total Paid Amount" links to show the details table and header
+        $('#data-table').on('click', '.total-paid-amount', function (e) {
+            e.preventDefault();
+            const clickedAmount = $(this).text();
+            const clickedId = $(this).data('id'); // Retrieve the data-id attribute value
+            const clickedSender = $(this).data('sender');
+            const clickedReceiver = $(this).data('receiver');
+            const clickedTAmount = $(this).data('amount'); // Use data-amount to get total amount
+
+            // Hide the original data table and show the back button
+            $('#data-table').hide();
+            $('#backButtonContainer').show();
+            $('#pagination').hide();
+
+            // Toggle between the headers
+            $('#transactionHeader').hide();
+            $('#installmentsHeader').show();
+
+            // Show the new table for total paid amount details
+            $('#totalPaidAmountTable').show();
+
+            // Load data for the new table using an AJAX request (replace with actual endpoint)
+            $.ajax({
+                url: `/Det/list/${clickedId}`, // Replace with the actual API endpoint and include the clickedId
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    // Clear the new table before populating with new data
+                    $('#totalPaidAmountTable tbody').empty();
+
+                    // Iterate through the JSON data and populate the new table
+                    data.forEach(function (item) {
+                        $('#totalPaidAmountTable tbody').append(`
+                                <tr>
+                                    <td>${item.id}</td>
+                                    <td>${clickedSender}</td>
+                                    <td>${clickedReceiver}</td>
+                                    <td>${clickedTAmount}</td>
+                                    <td>${item.paidAmount}</td>
+                                </tr>
+                            `);
+                    });
+                },
+                error: function (error) {
+                    console.error('Error fetching total paid amount details:', error);
+                }
+            });
+        });
+
+        // Handle click on the back button to return to the previous table and header
+        $('#backButton').click(function () {
+            // Hide the total paid amount table, back button, and header
+            $('#totalPaidAmountTable').hide();
+            $('#backButtonContainer').hide();
+            $('#installmentsHeader').hide();
+
+            // Toggle back to the original header
+            $('#transactionHeader').show();
+
+            // Show the original data table and pagination
+            $('#data-table').show();
+            $('#pagination').show();
+        });
+    });
+</script>
+</body>
+
+</html>
